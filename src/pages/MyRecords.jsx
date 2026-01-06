@@ -1,0 +1,230 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { degreeAPI, transcriptAPI } from '../services/api';
+
+const MyRecords = () => {
+    const { user } = useAuth();
+    const [degrees, setDegrees] = useState([]);
+    const [transcript, setTranscript] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState('degrees');
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError('');
+
+        try {
+            // Fetch both degrees and transcript in parallel
+            const [degreesResult, transcriptResult] = await Promise.allSettled([
+                degreeAPI.getMyDegrees(),
+                transcriptAPI.getMyTranscript()
+            ]);
+
+            if (degreesResult.status === 'fulfilled' && degreesResult.value.success) {
+                setDegrees(degreesResult.value.degrees || []);
+            }
+
+            if (transcriptResult.status === 'fulfilled' && transcriptResult.value.success) {
+                setTranscript(transcriptResult.value.transcript);
+            }
+        } catch (err) {
+            setError(err.message || 'Không thể tải dữ liệu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="page">
+                <div className="container text-center">
+                    <div className="spinner" style={{ margin: '0 auto' }}></div>
+                    <p className="mt-md">Đang tải hồ sơ của bạn...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="page">
+            <div className="container">
+                <div className="flex-between mb-lg">
+                    <div>
+                        <h1>📚 Hồ sơ của tôi</h1>
+                        <p className="text-secondary">
+                            Xin chào, <strong>{user?.username}</strong>! Đây là văn bằng và bảng điểm của bạn.
+                        </p>
+                    </div>
+                    <button className="btn btn-secondary" onClick={fetchData}>
+                        🔄 Làm mới
+                    </button>
+                </div>
+
+                {error && <div className="alert alert-error mb-lg">{error}</div>}
+
+                {/* Tabs */}
+                <div className="tabs">
+                    <button
+                        className={`tab ${activeTab === 'degrees' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('degrees')}
+                    >
+                        🎓 Văn bằng ({degrees.length})
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'transcript' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('transcript')}
+                    >
+                        📋 Bảng điểm
+                    </button>
+                </div>
+
+                {/* Degrees Tab */}
+                {activeTab === 'degrees' && (
+                    <div>
+                        {degrees.length === 0 ? (
+                            <div className="card">
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">🎓</div>
+                                    <p>Bạn chưa có văn bằng nào được cấp.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-2">
+                                {degrees.map((degree, index) => (
+                                    <div key={degree.degreeId || index} className="card">
+                                        <div className="flex-between mb-md">
+                                            <span className={`status ${degree.status === 'ACTIVE' ? 'status-active' : 'status-revoked'}`}>
+                                                {degree.status || 'ACTIVE'}
+                                            </span>
+                                            <span className="form-hint">{degree.issueDate}</span>
+                                        </div>
+
+                                        <h3 style={{ marginBottom: '8px' }}>{degree.degreeType}</h3>
+                                        <p className="form-hint" style={{ marginBottom: '16px' }}>{degree.degreeId}</p>
+
+                                        <dl className="degree-details">
+                                            <dt>Họ và tên</dt>
+                                            <dd>{degree.studentName}</dd>
+
+                                            <dt>Trường</dt>
+                                            <dd>{degree.universityName}</dd>
+
+                                            <dt>Ngành</dt>
+                                            <dd>{degree.major}</dd>
+
+                                            <dt>Xếp loại</dt>
+                                            <dd>
+                                                <span className="status status-active">{degree.classification}</span>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Transcript Tab */}
+                {activeTab === 'transcript' && (
+                    <div>
+                        {!transcript ? (
+                            <div className="card">
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">📋</div>
+                                    <p>Không tìm thấy bảng điểm của bạn.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-2">
+                                <div className="card">
+                                    <div className="card-header">
+                                        <h2 className="card-title">Thông tin sinh viên</h2>
+                                    </div>
+                                    <dl className="degree-details">
+                                        <dt>Mã sinh viên</dt>
+                                        <dd><strong>{transcript.studentId}</strong></dd>
+
+                                        <dt>Điểm GPA</dt>
+                                        <dd>
+                                            <span className="status status-active" style={{ fontSize: '1.25rem', padding: '6px 16px' }}>
+                                                {transcript.gpa}
+                                            </span>
+                                        </dd>
+
+                                        {transcript.personalInfo && (
+                                            <>
+                                                {transcript.personalInfo.dateOfBirth && (
+                                                    <>
+                                                        <dt>Ngày sinh</dt>
+                                                        <dd>{transcript.personalInfo.dateOfBirth}</dd>
+                                                    </>
+                                                )}
+                                                {transcript.personalInfo.gender && (
+                                                    <>
+                                                        <dt>Giới tính</dt>
+                                                        <dd>{transcript.personalInfo.gender}</dd>
+                                                    </>
+                                                )}
+                                                {transcript.personalInfo.nationality && (
+                                                    <>
+                                                        <dt>Quốc tịch</dt>
+                                                        <dd>{transcript.personalInfo.nationality}</dd>
+                                                    </>
+                                                )}
+                                                {transcript.personalInfo.contactInfo && (
+                                                    <>
+                                                        <dt>Liên hệ</dt>
+                                                        <dd>{transcript.personalInfo.contactInfo}</dd>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                    </dl>
+                                </div>
+
+                                <div className="card">
+                                    <div className="card-header">
+                                        <h2 className="card-title">Điểm chi tiết các môn</h2>
+                                    </div>
+                                    {transcript.detailedGrades && Object.keys(transcript.detailedGrades).length > 0 ? (
+                                        <div className="table-container">
+                                            <table className="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Môn học</th>
+                                                        <th style={{ textAlign: 'center' }}>Điểm</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {Object.entries(transcript.detailedGrades).map(([subject, grade]) => (
+                                                        <tr key={subject}>
+                                                            <td>{subject}</td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <strong>{grade}</strong>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="empty-state">
+                                            <p>Không có dữ liệu điểm chi tiết</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default MyRecords;
