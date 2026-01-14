@@ -18,6 +18,11 @@ const Navbar = () => {
         return null;
     }
 
+    const isAdmin = user?.ou === 'admin';
+    const isReviewer = user?.ou === 'reviewer';
+    const isStudent = user?.ou === 'student';
+    const isAdminOrReviewer = isAdmin || isReviewer;
+
     return (
         <nav className="navbar">
             <div className="container navbar-content">
@@ -36,14 +41,16 @@ const Navbar = () => {
                                     Dashboard
                                 </Link>
                             </li>
-                            {user?.ou === 'admin' && (
+
+                            {/* Admin-only menu items */}
+                            {isAdmin && (
                                 <>
                                     <li>
                                         <Link
-                                            to="/create-student"
-                                            className={`navbar-link ${isActive('/create-student') ? 'active' : ''}`}
+                                            to="/create-account"
+                                            className={`navbar-link ${isActive('/create-account') ? 'active' : ''}`}
                                         >
-                                            👨‍🎓 Tạo SV
+                                            👤 Tạo TK
                                         </Link>
                                     </li>
                                     <li>
@@ -78,9 +85,31 @@ const Navbar = () => {
                                             Xem điểm
                                         </Link>
                                     </li>
+                                    <li>
+                                        <Link
+                                            to="/import-export"
+                                            className={`navbar-link ${isActive('/import-export') ? 'active' : ''}`}
+                                        >
+                                            📥 CSV
+                                        </Link>
+                                    </li>
                                 </>
                             )}
-                            {user?.ou === 'student' && (
+
+                            {/* Admin & Reviewer shared menu items */}
+                            {isAdminOrReviewer && (
+                                <li>
+                                    <Link
+                                        to="/degree-history"
+                                        className={`navbar-link ${isActive('/degree-history') ? 'active' : ''}`}
+                                    >
+                                        📜 Lịch sử
+                                    </Link>
+                                </li>
+                            )}
+
+                            {/* Student menu items */}
+                            {isStudent && (
                                 <>
                                     <li>
                                         <Link
@@ -104,6 +133,14 @@ const Navbar = () => {
                                             className={`navbar-link ${isActive('/grant-access') ? 'active' : ''}`}
                                         >
                                             Chia sẻ
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            to="/transcript-history"
+                                            className={`navbar-link ${isActive('/transcript-history') ? 'active' : ''}`}
+                                        >
+                                            📜 Lịch sử điểm
                                         </Link>
                                     </li>
                                 </>

@@ -62,8 +62,10 @@ export const authAPI = {
             method: 'POST',
             body: JSON.stringify({ username, password }),
         });
-        if (data.success && data.token) {
-            setToken(data.token);
+        // Backend returns accessToken and refreshToken (JWT security enhancement)
+        if (data.success && data.accessToken) {
+            setToken(data.accessToken); // Store access token
+            localStorage.setItem('refreshToken', data.refreshToken); // Store refresh token
             setUser(data.user);
         }
         return data;
@@ -77,6 +79,7 @@ export const authAPI = {
         }
         removeToken();
         removeUser();
+        localStorage.removeItem('refreshToken'); // Remove refresh token
     },
 
     getProfile: () => apiRequest('/auth/profile'),
@@ -139,4 +142,42 @@ export const healthAPI = {
     check: () => apiRequest('/health'),
 };
 
+// Public Verify API (no auth required)
+const API_BASE_URL_PUBLIC = API_BASE_URL;
+export const publicVerifyAPI = {
+    verify: async (degreeId) => {
+        const response = await fetch(`${API_BASE_URL_PUBLIC}/verify/${encodeURIComponent(degreeId)}`);
+        return response.json();
+    },
+
+    batchVerify: async (degreeIds) => {
+        const response = await fetch(`${API_BASE_URL_PUBLIC}/verify/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ degreeIds }),
+        });
+        return response.json();
+    },
+};
+
+// Bulk Import/Export API
+export const bulkAPI = {
+    importCSV: (csvData) =>
+        apiRequest('/import/csv', {
+            method: 'POST',
+            body: JSON.stringify({ csvData }),
+        }),
+
+    exportDegrees: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/export/degrees`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+        if (!response.ok) throw new Error('Export failed');
+        const blob = await response.blob();
+        return blob;
+    },
+};
+
 export { getToken, setToken, removeToken, getUser, setUser, removeUser };
+

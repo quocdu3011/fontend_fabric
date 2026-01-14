@@ -11,14 +11,13 @@ const IssueDegree = () => {
     const [success, setSuccess] = useState(null);
     const [formData, setFormData] = useState({
         degreeId: '',
-        studentId: '', // Mã sinh viên (ánh xạ với tài khoản sinh viên)
+        studentId: '',
         degreeType: 'Kỹ sư',
         studentName: '',
-        universityName: 'Học viện Kỹ thuật Mật mã',
+        university: 'Học viện Kỹ thuật Mật mã',
         major: '',
         classification: 'Giỏi',
         issueDate: new Date().toISOString().split('T')[0],
-        transcriptHash: '',
     });
 
     // Check if user is admin
@@ -46,6 +45,14 @@ const IssueDegree = () => {
         });
     };
 
+    const generateIds = () => {
+        const timestamp = Date.now();
+        setFormData({
+            ...formData,
+            degreeId: formData.degreeId || `DEG-${timestamp}`,
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -53,7 +60,18 @@ const IssueDegree = () => {
         setLoading(true);
 
         try {
-            const result = await degreeAPI.issue(formData);
+            // Issue degree directly
+            const result = await degreeAPI.issue({
+                degreeId: formData.degreeId,
+                studentId: formData.studentId,
+                degreeType: formData.degreeType,
+                studentName: formData.studentName,
+                universityName: formData.university,
+                major: formData.major,
+                classification: formData.classification,
+                issueDate: formData.issueDate,
+            });
+
             if (result.success) {
                 setSuccess(result);
                 setFormData({
@@ -61,11 +79,10 @@ const IssueDegree = () => {
                     studentId: '',
                     degreeType: 'Kỹ sư',
                     studentName: '',
-                    universityName: 'Học viện Kỹ thuật Mật mã',
+                    university: 'Học viện Kỹ thuật Mật mã',
                     major: '',
                     classification: 'Giỏi',
                     issueDate: new Date().toISOString().split('T')[0],
-                    transcriptHash: '',
                 });
             }
         } catch (err) {
@@ -79,13 +96,23 @@ const IssueDegree = () => {
         <div className="page">
             <div className="container">
                 <div className="flex-between mb-lg">
-                    <h1>➕ Cấp bằng số mới</h1>
+                    <div>
+                        <h1>➕ Cấp bằng</h1>
+                        <p className="text-secondary">
+                            Cấp bằng chính thức cho sinh viên
+                        </p>
+                    </div>
+                    <div className="action-buttons">
+                        <button type="button" className="btn btn-secondary" onClick={generateIds}>
+                            🔢 Tự động tạo ID
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-2">
                     <div className="card">
                         <div className="card-header">
-                            <h2 className="card-title">Thông tin văn bằng</h2>
+                            <h2 className="card-title">Thông tin bằng cấp</h2>
                             <p className="card-subtitle">Điền đầy đủ thông tin để cấp bằng</p>
                         </div>
 
@@ -152,8 +179,8 @@ const IssueDegree = () => {
                                 <input
                                     type="text"
                                     className="form-input"
-                                    name="universityName"
-                                    value={formData.universityName}
+                                    name="university"
+                                    value={formData.university}
                                     onChange={handleChange}
                                     required
                                 />
@@ -200,25 +227,12 @@ const IssueDegree = () => {
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Hash bảng điểm (tùy chọn)</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    name="transcriptHash"
-                                    value={formData.transcriptHash}
-                                    onChange={handleChange}
-                                    placeholder="a1b2c3d4e5f6..."
-                                />
-                                <p className="form-hint">Hash của bảng điểm để liên kết</p>
-                            </div>
-
                             <button
                                 type="submit"
                                 className="btn btn-primary btn-lg btn-block"
                                 disabled={loading}
                             >
-                                {loading ? 'Đang xử lý...' : '🎓 Cấp bằng'}
+                                {loading ? 'Đang xử lý...' : '📤 Cấp bằng'}
                             </button>
                         </form>
                     </div>
@@ -232,28 +246,41 @@ const IssueDegree = () => {
                                 </div>
 
                                 <div className="mt-lg">
-                                    <h3 className="mb-md">Thông tin giao dịch</h3>
+                                    <h3 className="mb-md">Thông tin bằng cấp</h3>
                                     <dl className="degree-details">
-                                        <dt>Transaction ID</dt>
-                                        <dd>
-                                            <code className="code-block">{success.transactionId}</code>
-                                        </dd>
                                         <dt>Mã bằng</dt>
-                                        <dd>{success.degree?.degreeId}</dd>
+                                        <dd><strong>{success.degree?.degreeId}</strong></dd>
+                                        <dt>Transaction ID</dt>
+                                        <dd className="text-secondary" style={{fontSize: '0.85rem', wordBreak: 'break-all'}}>
+                                            {success.transactionId}
+                                        </dd>
                                         <dt>Sinh viên</dt>
                                         <dd>{success.degree?.studentName}</dd>
+                                        <dt>Mã SV</dt>
+                                        <dd>{success.degree?.studentId}</dd>
+                                        <dt>Ngành học</dt>
+                                        <dd>{success.degree?.major}</dd>
+                                        <dt>Xếp loại</dt>
+                                        <dd>{success.degree?.classification}</dd>
                                     </dl>
 
-                                    <button
-                                        className="btn btn-secondary mt-md"
-                                        onClick={() => navigate(`/verify?id=${success.degree?.degreeId}`)}
-                                    >
-                                        🔍 Xác thực bằng này
-                                    </button>
+                                    <div className="action-buttons mt-lg">
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={() => navigate('/verify-degree')}
+                                        >
+                                            🔍 Xác minh bằng
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => setSuccess(null)}
+                                        >
+                                            ➕ Cấp bằng mới
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
-
                     </div>
                 </div>
             </div>

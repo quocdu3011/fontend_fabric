@@ -206,6 +206,7 @@ const Register = () => {
                                 >
                                     <option value="student">Student (Sinh viên)</option>
                                     <option value="admin">Admin (Quản trị)</option>
+                                    <option value="reviewer">Reviewer (Phê duyệt)</option>
                                     <option value="client">Client (Xác thực)</option>
                                 </select>
                             </div>
