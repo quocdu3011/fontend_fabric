@@ -20,8 +20,6 @@ import CreateAccount from './pages/CreateAccount';
 
 // New Advanced Feature Pages
 import ImportExport from './pages/ImportExport';
-import DegreeHistory from './pages/DegreeHistory';
-import TranscriptHistory from './pages/TranscriptHistory';
 import PublicVerify from './pages/PublicVerify';
 
 import './index.css';
@@ -53,8 +51,6 @@ function App() {
 
               {/* New Advanced Feature Routes */}
               <Route path="/import-export" element={<ImportExport />} />
-              <Route path="/degree-history" element={<DegreeHistory />} />
-              <Route path="/transcript-history" element={<TranscriptHistory />} />
             </Route>
 
             {/* Default redirect */}

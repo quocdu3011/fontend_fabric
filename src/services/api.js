@@ -4,6 +4,9 @@ const API_BASE_URL = 'http://localhost:3000/api';
 const getToken = () => localStorage.getItem('token');
 const setToken = (token) => localStorage.setItem('token', token);
 const removeToken = () => localStorage.removeItem('token');
+const getRefreshToken = () => localStorage.getItem('refreshToken');
+const setRefreshToken = (token) => localStorage.setItem('refreshToken', token);
+const removeRefreshToken = () => localStorage.removeItem('refreshToken');
 
 // User management
 const getUser = () => {
@@ -13,8 +16,44 @@ const getUser = () => {
 const setUser = (user) => localStorage.setItem('user', JSON.stringify(user));
 const removeUser = () => localStorage.removeItem('user');
 
-// API request wrapper
-const apiRequest = async (endpoint, options = {}) => {
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise = null;
+
+/**
+ * Refresh access token using refresh token
+ */
+const refreshAccessToken = async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+        throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        // Clear tokens on refresh failure
+        removeToken();
+        removeRefreshToken();
+        removeUser();
+        throw new Error(data.error || 'Failed to refresh token');
+    }
+
+    // Store new tokens
+    setToken(data.accessToken);
+    setRefreshToken(data.refreshToken);
+
+    return data.accessToken;
+};
+
+// API request wrapper with auto-refresh
+const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
     const token = getToken();
 
     const headers = {
@@ -32,6 +71,30 @@ const apiRequest = async (endpoint, options = {}) => {
     });
 
     const data = await response.json();
+
+    // Handle token expired - try to refresh
+    if (response.status === 401 && data.code === 'AUTH_TOKEN_EXPIRED' && retryCount === 0) {
+        try {
+            // Prevent multiple simultaneous refresh attempts
+            if (!isRefreshing) {
+                isRefreshing = true;
+                refreshPromise = refreshAccessToken();
+            }
+
+            await refreshPromise;
+            isRefreshing = false;
+            refreshPromise = null;
+
+            // Retry the original request with new token
+            return apiRequest(endpoint, options, retryCount + 1);
+        } catch (refreshError) {
+            isRefreshing = false;
+            refreshPromise = null;
+            // Refresh failed, redirect to login
+            window.location.href = '/login';
+            throw new Error('Session expired. Please login again.');
+        }
+    }
 
     if (!response.ok) {
         const error = new Error(data.error || 'API request failed');
@@ -62,10 +125,10 @@ export const authAPI = {
             method: 'POST',
             body: JSON.stringify({ username, password }),
         });
-        // Backend returns accessToken and refreshToken (JWT security enhancement)
+        // Backend returns accessToken and refreshToken
         if (data.success && data.accessToken) {
-            setToken(data.accessToken); // Store access token
-            localStorage.setItem('refreshToken', data.refreshToken); // Store refresh token
+            setToken(data.accessToken);
+            setRefreshToken(data.refreshToken);
             setUser(data.user);
         }
         return data;
@@ -79,7 +142,7 @@ export const authAPI = {
         }
         removeToken();
         removeUser();
-        localStorage.removeItem('refreshToken'); // Remove refresh token
+        removeRefreshToken();
     },
 
     getProfile: () => apiRequest('/auth/profile'),

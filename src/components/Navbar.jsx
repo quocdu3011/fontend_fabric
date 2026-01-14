@@ -96,18 +96,6 @@ const Navbar = () => {
                                 </>
                             )}
 
-                            {/* Admin & Reviewer shared menu items */}
-                            {isAdminOrReviewer && (
-                                <li>
-                                    <Link
-                                        to="/degree-history"
-                                        className={`navbar-link ${isActive('/degree-history') ? 'active' : ''}`}
-                                    >
-                                        📜 Lịch sử
-                                    </Link>
-                                </li>
-                            )}
-
                             {/* Student menu items */}
                             {isStudent && (
                                 <>
@@ -133,14 +121,6 @@ const Navbar = () => {
                                             className={`navbar-link ${isActive('/grant-access') ? 'active' : ''}`}
                                         >
                                             Chia sẻ
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            to="/transcript-history"
-                                            className={`navbar-link ${isActive('/transcript-history') ? 'active' : ''}`}
-                                        >
-                                            📜 Lịch sử điểm
                                         </Link>
                                     </li>
                                 </>

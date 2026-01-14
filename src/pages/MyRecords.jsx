@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { degreeAPI, transcriptAPI, qrCodeAPI } from '../services/api';
+import { degreeAPI, transcriptAPI } from '../services/api';
 
 const MyRecords = () => {
     const { user } = useAuth();
@@ -9,11 +9,6 @@ const MyRecords = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('degrees');
-
-    // QR Code state
-    const [showQrModal, setShowQrModal] = useState(false);
-    const [qrData, setQrData] = useState(null);
-    const [qrLoading, setQrLoading] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -41,21 +36,6 @@ const MyRecords = () => {
             setError(err.message || 'Không thể tải dữ liệu');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleShowQrCode = async (degreeId) => {
-        setQrLoading(true);
-        try {
-            const result = await qrCodeAPI.generate(degreeId);
-            if (result.success) {
-                setQrData(result);
-                setShowQrModal(true);
-            }
-        } catch (err) {
-            setError(err.message || 'Không thể tạo QR code');
-        } finally {
-            setQrLoading(false);
         }
     };
 
@@ -144,13 +124,6 @@ const MyRecords = () => {
                                         </dl>
 
                                         <div className="action-buttons mt-md">
-                                            <button
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => handleShowQrCode(degree.degreeId)}
-                                                disabled={qrLoading}
-                                            >
-                                                {qrLoading ? '...' : '📱 QR Code'}
-                                            </button>
                                             <a
                                                 href={`/verify/${degree.degreeId}`}
                                                 target="_blank"
@@ -261,40 +234,6 @@ const MyRecords = () => {
                     </div>
                 )}
             </div>
-
-            {/* QR Code Modal */}
-            {showQrModal && qrData && (
-                <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">📱 QR Code xác thực</h3>
-                            <button className="modal-close" onClick={() => setShowQrModal(false)}>&times;</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="qr-code-container">
-                                <img src={qrData.qrCode} alt="QR Code xác thực văn bằng" />
-                                <p className="mt-md"><strong>Mã bằng:</strong> {qrData.degreeId}</p>
-                                <p className="qr-code-url">{qrData.verificationUrl}</p>
-                            </div>
-                            <div className="alert alert-info mt-md">
-                                Quét mã QR này để xác thực văn bằng của bạn. Có thể chia sẻ cho nhà tuyển dụng hoặc bên thứ ba.
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <a
-                                href={qrData.qrCode}
-                                download={`qrcode-${qrData.degreeId}.png`}
-                                className="btn btn-primary"
-                            >
-                                📥 Tải QR Code
-                            </a>
-                            <button className="btn btn-secondary" onClick={() => setShowQrModal(false)}>
-                                Đóng
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

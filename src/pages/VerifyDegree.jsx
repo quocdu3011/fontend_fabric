@@ -118,7 +118,7 @@ const VerifyDegree = () => {
                                             <dd>{result.degree?.studentName}</dd>
 
                                             <dt>Trường</dt>
-                                            <dd>{result.degree?.universityName}</dd>
+                                            <dd>{result.degree?.university}</dd>
 
                                             <dt>Ngành</dt>
                                             <dd>{result.degree?.major}</dd>
