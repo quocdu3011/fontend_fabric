@@ -202,32 +202,36 @@ const MyRecords = () => {
                                     <div className="card-header">
                                         <h2 className="card-title">Điểm chi tiết các môn</h2>
                                     </div>
-                                    {transcript.detailedGrades && Object.keys(transcript.detailedGrades).length > 0 ? (
-                                        <div className="table-container">
-                                            <table className="table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Môn học</th>
-                                                        <th style={{ textAlign: 'center' }}>Điểm</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {Object.entries(transcript.detailedGrades).map(([subject, grade]) => (
-                                                        <tr key={subject}>
-                                                            <td>{subject}</td>
-                                                            <td style={{ textAlign: 'center' }}>
-                                                                <strong>{grade}</strong>
-                                                            </td>
+                                    {(() => {
+                                        // Support both 'detailedGrades' and 'transcript' keys for grades data
+                                        const gradesData = transcript.detailedGrades || transcript.transcript || {};
+                                        return Object.keys(gradesData).length > 0 ? (
+                                            <div className="table-container">
+                                                <table className="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Môn học</th>
+                                                            <th style={{ textAlign: 'center' }}>Điểm</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    ) : (
-                                        <div className="empty-state">
-                                            <p>Không có dữ liệu điểm chi tiết</p>
-                                        </div>
-                                    )}
+                                                    </thead>
+                                                    <tbody>
+                                                        {Object.entries(gradesData).map(([subject, grade]) => (
+                                                            <tr key={subject}>
+                                                                <td>{subject}</td>
+                                                                <td style={{ textAlign: 'center' }}>
+                                                                    <strong>{grade}</strong>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <div className="empty-state">
+                                                <p>Không có dữ liệu điểm chi tiết</p>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         )}
